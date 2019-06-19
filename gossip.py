@@ -56,6 +56,7 @@ def lambda_handler(event, context):
 
 def extract_items(soup):
     href = soup.find('li').find('a', href=re.compile("https://labusinessjournal.*")).attrs["href"]
+    print("fetching ", href)
     page = requests.get(href)
     soup = bs4.BeautifulSoup(page.content, 'html.parser')
     p = soup.find('div', 'article')('p')
