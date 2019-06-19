@@ -69,8 +69,8 @@ def process_items(items, handler):
         if a:
             link = '<%s|%s>' % (a.attrs['href'], a.string)
         elif link:
-            if elem.string:
-                post_slack(link, elem.string)
+            if elem.text:
+                post_slack(link, elem.text)
             link = None
 
 
