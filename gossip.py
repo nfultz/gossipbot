@@ -63,13 +63,14 @@ def extract_items(soup):
     return p
 
 def process_items(items, handler):
+    is_blank = lambda x: x.string is None or x.string.strip() == ""
     link = None
     items = list(items)
     for i in range(len(items)):
         elem = items[i]
         a = elem.find('a')
         #paragraph with only a link
-        if a and list(elem.children) == [ a ]:
+        if a and [ t for t in elem.contents if not is_blank(t) ] == [ a ]:
             link = '<%s|%s>' % (a.attrs['href'], a.string)
             post_slack(link, items[i+1].text)
 
