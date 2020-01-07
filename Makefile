@@ -3,7 +3,7 @@
 export AWS_DEFAULT_REGION = us-east-1
 
 manual :
-	SLACK_WEBHOOK=$(<.slack_webhook) ./gossip.py vgk751ho2ub1neprv3kihr03och7bjh915gf5j01
+	SLACK_WEBHOOK=$(<.slack_webhook) ./gossip.py socaltech.email
 
 
 update : gossip.zip

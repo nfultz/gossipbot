@@ -11,16 +11,18 @@ import requests
 INCOMING = 'neal.news.testing'
 SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK")
 
-EXPECTED_FROM = "Los Angeles Business Journal <newsletter@news.labusinessjournal.com>"
-EXPECTED_SUBJ = 'Silicon Beach Report'
+EXPECTED_FROM = '"Benjamin F. Kuo" <ben@socaltech.com>'
+EXPECTED_SUBJ = 'socaltech.com TechNews'
 
 def parse_email(f,dump=False):
     print("parse_email")
     p = email.message_from_file(f, policy=email.policy.SMTPUTF8)
 
-    frm, subj = p.get("From"), p.get("Subject")
+    to, frm, subj = p.get("To"), p.get("From"), p.get("Subject")
 
-    if frm != EXPECTED_FROM or not subj.startswith(EXPECTED_SUBJ):
+    if frm == EXPECTED_FROM and subj.startswith(EXPECTED_SUBJ):
+        pass
+    else:
         return None
 
         
@@ -55,24 +57,25 @@ def lambda_handler(event, context):
     process_items(items, post_slack)
 
 def extract_items(soup):
-    href = soup.find('li').find('a', href=re.compile("https://labusinessjournal.*")).attrs["href"]
-    print("fetching ", href)
-    page = requests.get(href)
-    soup = bs4.BeautifulSoup(page.content, 'html.parser')
-    p = soup.find('div', 'article')('p')
-    return p
+#    href = soup.find('li').find('a', href=re.compile("https://labusinessjournal.*")).attrs["href"]
+#    print("fetching ", href)
+#    page = requests.get(href)
+#    soup = bs4.BeautifulSoup(page.content, 'html.parser')
+#    p = soup.find('div', 'article')('p')
+    a = soup.findAll(text="Headlines")[0].parent.parent.findNext("ul").findAll('a')[:3]
+    items = []
+    for i in a:
+        hl = i.text
+        art = soup.find('a',{'name':i.attrs['href'][1:]}) # follow <a href="#xxxx"> to <a name="xxxx">
+        more = art.find_next_sibling('a', text='More...')
+        href = more.attrs['href']
+        snippet = more.previous_sibling
+        items.append({'hl':hl, 'href':href, 'snippet':snippet})
+    return items
 
 def process_items(items, handler):
-    is_blank = lambda x: x.string is None or x.string.strip() == ""
-    link = None
-    items = list(items)
-    for i in range(len(items)):
-        elem = items[i]
-        a = elem.find('a')
-        #paragraph with only a link
-        if a and [ t for t in elem.contents if not is_blank(t) ] == [ a ]:
-            link = '<%s|%s>' % (a.attrs['href'], a.string)
-            post_slack(link, items[i+1].text)
+    for i in items:
+        handler("<%(href)s|%(hl)s> %(snippet)s" % i)
 
 
 def post_slack(*args):
